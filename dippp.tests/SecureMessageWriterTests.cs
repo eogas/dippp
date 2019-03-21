@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Principal;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace dippp.tests
 {
@@ -10,30 +11,51 @@ namespace dippp.tests
     public class SecureMessageWriterTests
     {
         [TestMethod]
-        public void TestSecureWriter()
+        public void TestSecureWriterAuthed()
         {
-            IMessageWriter writer = new ConsoleMessageWriter();
-            IMessageWriter secureWriter = new SecureMessageWriter(writer, new GenericIdentity("asdf"));
-            var secureSalutation = new Salutation(secureWriter);
-            secureSalutation.Exclaim();
+            // arrange
+            var writer = new Mock<IMessageWriter>();
+            var identity = new Mock<IIdentity>();
+            identity.SetupGet(i => i.IsAuthenticated).Returns(true);
+
+            var secureWriter = new SecureMessageWriter(writer.Object, identity.Object);
+
+            // act
+            secureWriter.Write("test");
+
+            // assert
+            writer.Verify(w => w.Write("test"), Times.Once());
+        }
+
+        [TestMethod]
+        public void TestSecureWriterNoAuth()
+        {
+            // arrange
+            var writer = new Mock<IMessageWriter>();
+            var identity = new Mock<IIdentity>();
+            identity.SetupGet(i => i.IsAuthenticated).Returns(false);
+            
+            var secureWriter = new SecureMessageWriter(writer.Object, identity.Object);
+
+            // act
+            secureWriter.Write("test");
+
+            // assert
+            writer.Verify(w => w.Write("test"), Times.Never());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestNullWriter()
         {
-            IMessageWriter writer = null;
-            IIdentity identity = new GenericIdentity("asdf");
-            IMessageWriter secureWriter = new SecureMessageWriter(writer, identity);
+            new SecureMessageWriter(writer: null, identity: Mock.Of<IIdentity>());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestNullIdentity()
         {
-            IMessageWriter writer = new ConsoleMessageWriter();;
-            IIdentity identity = null;
-            IMessageWriter secureWriter = new SecureMessageWriter(writer, identity);
+            new SecureMessageWriter(writer: Mock.Of<IMessageWriter>(), identity: null);
         }
     }
 }

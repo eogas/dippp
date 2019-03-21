@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Principal;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace dippp.tests
 {
@@ -10,20 +11,17 @@ namespace dippp.tests
     public class SalutationTests
     {
         [TestMethod]
-        public void TestWriter()
+        public void TestExclaim()
         {
-            IMessageWriter writer = new ConsoleMessageWriter();
-            var salutation = new Salutation(writer);
-            salutation.Exclaim();
-        }
+            // arrange
+            var writer = new Mock<IMessageWriter>();
+            var salutation = new Salutation(writer.Object);
 
-        [TestMethod]
-        public void TestSecureWriter()
-        {
-            IMessageWriter writer = new ConsoleMessageWriter();
-            IMessageWriter secureWriter = new SecureMessageWriter(writer, new GenericIdentity("asdf"));
-            var secureSalutation = new Salutation(secureWriter);
-            secureSalutation.Exclaim();
+            // act
+            salutation.Exclaim();
+
+            // assert
+            writer.Verify(w => w.Write("Hello DI!"), Times.Once());
         }
 
         [TestMethod]
